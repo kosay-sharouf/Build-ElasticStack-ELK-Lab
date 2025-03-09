@@ -1,4 +1,4 @@
-![2](https://github.com/user-attachments/assets/7e5c79ae-476d-4f94-b116-aa67981d6203)👨‍💻 # Build-ElasticStack-ELK-Lab 🚀
+👨‍💻 # Build-ElasticStack-ELK-Lab 🚀
 --- 
 ## Objective 🎯
 
@@ -120,3 +120,161 @@ To generate Verification code , we need to navigate to Kibana installation direc
 Next, let's proceed with logging in using the provided username and password.<br>
 ![image](https://github.com/user-attachments/assets/899cf33d-9d7c-485b-b36b-bfd2f55aecb0)<br>
 ![image](https://github.com/user-attachments/assets/9d75e15f-4d7e-4aa8-92f7-77f307c27a8d)<br>
+
+---
+
+## Configure Fluent-Bit to send logs to ELK
+![image](https://github.com/user-attachments/assets/2b4309dd-875c-4e35-a104-892fec6ca77b)<br>
+
+### Prerequisites:
+![3](https://github.com/user-attachments/assets/ff39ac1e-1f98-429a-aca5-b204f3b5e8e0)<br>
+the example from <a href="https://docs.fluentbit.io/manual/installation/windows#configuration">doc-Fluent-Bit</a><br>
+Let's begin by installing Fluent-Bit on Windows.<br>
+```powershell
+   [SERVICE]
+    # Flush
+    # =====
+    # set an interval of seconds before to flush records to a destination
+    flush        5
+
+    # Daemon
+    # ======
+    # instruct Fluent Bit to run in foreground or background mode.
+    daemon       Off
+
+    # Log_Level
+    # =========
+    # Set the verbosity level of the service, values can be:
+    #
+    # - error
+    # - warning
+    # - info
+    # - debug
+    # - trace
+    #
+    # by default 'info' is set, that means it includes 'error' and 'warning'.
+    log_level    info
+
+    # Parsers File
+    # ============
+    # specify an optional 'Parsers' configuration file
+    parsers_file parsers.conf
+
+    # Plugins File
+    # ============
+    # specify an optional 'Plugins' configuration file to load external plugins.
+    plugins_file plugins.conf
+
+    # HTTP Server
+    # ===========
+    # Enable/Disable the built-in HTTP Server for metrics
+    http_server  Off
+    http_listen  0.0.0.0
+    http_port    2020
+
+    # Storage
+    # =======
+    # Fluent Bit can use memory and filesystem buffering based mechanisms
+    #
+    # - https://docs.fluentbit.io/manual/administration/buffering-and-storage
+    #
+    # storage metrics
+    # ---------------
+    # publish storage pipeline metrics in '/api/v1/storage'. The metrics are
+    # exported only if the 'http_server' option is enabled.
+    #
+    storage.metrics on
+
+[INPUT]
+    Name         winlog
+    Channels     Setup,Windows PowerShell
+    Interval_Sec 1
+
+[OUTPUT]
+    name  stdout
+    match *
+   ```
+Let's begin by installing Fluent-Bit on Windows in the websit<br>
+![4](https://github.com/user-attachments/assets/1332f277-3aa8-4cda-b223-869472fc1884)<br>
+after the download file <br>
+![image](https://github.com/user-attachments/assets/0e750052-153c-479a-a828-5ee955589d44)<br>
+We have a log file named `network_sample.log` that we need to be ingested into the ELK stack. To ensure accurate data extraction, we will begin by crafting an appropriate regular expression to parse the required information.<br>
+#### what is regex<br>
+A regular expression (regex) is a sequence of characters that defines a search pattern. It is used to match, extract, or manipulate specific parts of text. Regex is particularly useful for working with unstructured or semi-structured log data, where patterns need to be identified or extracted.<br>
+```bash
+  SRC=(?<src_ip>\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})\s+DST=(?<dst_ip>\d{1,3}.\d{1,3}.\d{1,3}.
+\d{1,3})\s+PROTO=(?<protocol>\w+)\s+SPT=(?<src_port>\d+)?\s+DPT=(?<dst_port>\d+)?\s+
+LEN=(?<lenght>\d+)?\s+ACTION=(?<action>\w+)
+   ```
+![image](https://github.com/user-attachments/assets/89f9d9e4-527c-4c6d-b7ca-df49b1845f0a)<br>
+A line does not match the current regular expression. Let's create a new one to accommodate it.<br>
+```bash
+  SRC=(?<src_ip>\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})\s+DST=(?<dst_ip>\d{1,3}.\d{1,3}.\d{1,3}.
+\d{1,3})\s+PROTO=(?<protocol>\w+)\s+TYPE=(?<type>\w+)\s+CODE=(?<code>\d+)\s+ID=(?<id>\d
++)\s+ACTION=(?<action>\w+)
+   ```
+![image](https://github.com/user-attachments/assets/418cf426-adbe-4337-b285-07d03f941162)<br>
+Note: the Regex quick reference<br>
+![5](https://github.com/user-attachments/assets/957acd41-73c5-4cfd-8f67-8e01d4dd7be4)<br>
+Next, we need to modify the `parsers.conf` file located in `C:\Program Files\fluent-bit\conf`.<br>
+![image](https://github.com/user-attachments/assets/56ccf7fa-b838-44d4-a3e0-4e1f672d06b1)<br>
+Next, we need to configure the `fluent-bit.conf` file, located at `C:\Program Files\fluent-bit\conf`, to forward logs to the ELK stack.<br>
+```bash
+  [INPUT]
+    Name         tail
+    Parser       firewall-logs-1
+    Path         C:\Users\NV\Downloads\network_sample.log
+    Tag          firewall.logs-1
+
+[INPUT]
+    Name         tail
+    Parser       firewall-logs-2
+    Path         C:\Users\NV\Downloads\network_sample.log
+    Tag          firewall.logs-2
+    
+[OUTPUT]
+    name    	  es
+    match   	  *
+    Host    	  192.168.204.146
+    Port    	  9200
+    Match   	  *
+    HTTP_User     elastic
+    HTTP_Passwd   =Op+25maKY3GqC=IrV7m
+    tls           on
+    tls.verify    off 
+    Trace_Output  on 
+    Suppress_Type_Name on
+   ```
+![image](https://github.com/user-attachments/assets/fc313f2d-6e29-4a50-8ff6-228c6bfa8374)<br>
+This configuration is for Fluent Bit to read logs from a file (`C:/Users/NV/Downloads/network_sample.log`) and forward them to an Elasticsearch instance.<br>
+
+- `name tail`: The `tail` input plugin reads log files line by line, similar to the `tail -f` command in Linux.
+- `parser firewall-logs-1`: Defines the parser used for processing log entries. The `firewall-logs` parser is specified in the parsers.conf file to extract structured fields from the logs efficiently.
+- path `C:/Users/NV/Downloads/network_sample.log`: The path to the log file to monitor. Fluent Bit will read new lines appended to this file.
+
+  For the `OUTPUT`:<br>
+- `name es`: The es output plugin sends logs to Elasticsearch.
+
+- `Host 192.168.204.146`: The IP address or hostname of the Elasticsearch server.
+
+- `Port 9200`: The port where Elasticsearch is listening (default is 9200).
+
+- `tls on`: Enables TLS/SSL encryption for communication with Elasticsearch.
+
+- `tls.verify off`: Disables certificate verification.
+
+- `Trace_Output on`: Enables verbose logging for debugging purposes.
+
+Now, let's run Fluent Bit:<br> 
+```powershell
+   & 'C:\Program Files\fluent-bit\bin\fluent-bit.exe' -c 'C:\Program Files\fluent-bit\conf\fluent-bit.conf'
+   ```
+![image](https://github.com/user-attachments/assets/93fdde05-4bcf-46e6-acaf-646413f062a3)<br>
+We need to duplicate specific lines within the network_sample.log file and save the changes.<br>
+
+Let's confirm whether the logs are successfully being forwarded to ELK.<br>
+![image](https://github.com/user-attachments/assets/315bd877-4361-45e4-bee0-c8b183f44b3f)
+![Uploading image.png…]()
+
+---
+
