@@ -273,8 +273,77 @@ Now, let's run Fluent Bit:<br>
 We need to duplicate specific lines within the network_sample.log file and save the changes.<br>
 
 Let's confirm whether the logs are successfully being forwarded to ELK.<br>
-![image](https://github.com/user-attachments/assets/315bd877-4361-45e4-bee0-c8b183f44b3f)
-![Uploading image.png…]()
+![image](https://github.com/user-attachments/assets/315bd877-4361-45e4-bee0-c8b183f44b3f)<br>
+![image](https://github.com/user-attachments/assets/0c93bb22-3166-414d-ab58-593bf8782f6b)<br>
 
 ---
+## Set up Winlogbeat and Filebeat for log collection
+
+### Winlogbeat
+We will begin by installing Winlogbeat on our Windows machine.<br>
+<a hrfe="https://www.elastic.co/downloads/beats/winlogbeat">Winlogbeat</a><br>
+![6](https://github.com/user-attachments/assets/0f8b0259-cefb-4e7b-886f-cd24764ea158)<br>
+after download we need to extract the contents into `C:\Program Files`<br>
+![image](https://github.com/user-attachments/assets/aad45036-4dcf-42f9-8e14-85296bdaec26)<br>
+Next, let's run the following commands to install the service.<br>
+```powershell
+   PowerShell.exe -ExecutionPolicy UnRestricted -File .\install-service-winlogbeat.ps1
+   ```
+![image](https://github.com/user-attachments/assets/b688a4b1-914a-4b2b-b6e7-3958e87c79dc)<br>
+Next, we need to modify the winlogbeat.yml configuration file to enable the Windows event logs we want to collect:<br>
+![image](https://github.com/user-attachments/assets/92981da3-0faf-4cf1-a82e-b57ead1c8cb4)
+Event IDs:<br>
+
+- `4688`: A new process has been created.
+
+- `4624`: An account was successfully logged on.
+
+- `4625`: An account failed to log on.
+
+- `4720`: A user account was created.
+
+- `1102`: The audit log was cleared
+
+Next, let's update the Elasticsearch output section:<br>
+![image](https://github.com/user-attachments/assets/5ad945cb-0ce4-4a97-926c-45a1aafb12e6)
+- `ssl.verification_mode`: none → This will bypass the certificate check.<br>
+
+- `protocol: "https"` → This tells Winlogbeat to use the HTTPS protocol when connecting.<br>
+
+This configures Winlogbeat to securely (or at least over HTTPS, though without SSL verification) send logs to a specific Elasticsearch server using a username and password.<br>
+
+Now, we need to test the configuration file to identify any potential issues.<br>
+```powershell
+  .\winlogbeat.exe test config -c .\winlogbeat.yml -e
+   ```
+![image](https://github.com/user-attachments/assets/95745514-d111-41fa-8bd5-c3e648b1735a)<br>
+We can also test the connection to our output by running:<br>
+```powershell
+  .\winlogbeat.exe test output -c .\winlogbeat.yml -e
+   ```
+![image](https://github.com/user-attachments/assets/6ea83476-162f-4f49-a447-ccc23d409154)<br>
+Next, we need to start the winlogbeat service:<br>
+```powershell
+  Start-Service winlogbeat
+Get-Service winlogbeat
+   ```
+![image](https://github.com/user-attachments/assets/eb0feb43-d89b-4ff3-9f8d-36173dfc6df3)<br>
+Next, we need to run Winlogbeat using the winlogbeat.yml configuration file and shows real-time logs in the console.<br>
+```powershell
+  .\winlogbeat.exe -c .\winlogbeat.yml -e
+   ```
+![image](https://github.com/user-attachments/assets/b8c406f2-49f8-47e8-80a1-f6a9d94977fc)<br>
+- `.\winlogbeat.exe` → Runs the Winlogbeat program to collect windows logs.
+
+- `-c .\winlogbeat.yml` → Uses the winlogbeat.yml file for configuration (tells Winlogbeat where to send logs, like Logstash).
+
+-  `-e` → Shows log messages on the screen instead of saving them to a file
+
+ Now, let's verify that the logs are properly displayed in Kibana.<br>
+ ![image](https://github.com/user-attachments/assets/c3a05bed-f8f5-4686-b769-c42b787fd18f)<br>
+then we can run `HOSTNAME.EXE`<br>
+![image](https://github.com/user-attachments/assets/18c3c919-d1fd-442a-8ace-b2d3f762436b)<br>
+
+---
+### Filebeat
 
