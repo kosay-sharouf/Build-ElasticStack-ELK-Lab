@@ -346,7 +346,7 @@ then we can run `HOSTNAME.EXE`<br>
 
 ---
 ### Filebeat
-![7](https://github.com/user-attachments/assets/e8e61549-09c2-4755-8d6a-8747d68fdb9a)
+![7](https://github.com/user-attachments/assets/e8e61549-09c2-4755-8d6a-8747d68fdb9a)<br>
 Filebeat, as the name implies, `hips log files`. In an ELK-based logging pipeline, Filebeat plays the role of the logging agent—installed on the machine generating the log files, tailing them, and forwarding the data to either Logstash for more advanced processing or directly into Elasticsearch for indexing.<br>
 Now , we need to install Filebeat useed commandline and Let's start by adding Elastic’s GPG key to verify the packages:<br>
 ```bash
@@ -359,37 +359,128 @@ Next, we need to add the Elastic repository to our system:<br>
 https://artifacts.elastic.co/packages/8.x/apt stable main" | sudo tee 
 /etc/apt/sources.list.d/elastic-8.x.list
    ```
-![image](https://github.com/user-attachments/assets/99a91634-3cef-43d6-99f6-4eb53784614a)
-Next, let's update the package list and install Filebeat.
+![image](https://github.com/user-attachments/assets/99a91634-3cef-43d6-99f6-4eb53784614a)<br>
+Next, let's update the package list and install Filebeat.<br>
 
 ```bash
   sudo apt update && sudo apt install filebeat
    ```
-![image](https://github.com/user-attachments/assets/3346bd13-ce53-4cb0-902c-6a685e145080)
-The next step is to open the Filebeat configuration file.
+![image](https://github.com/user-attachments/assets/3346bd13-ce53-4cb0-902c-6a685e145080)<br>
+The next step is to open the Filebeat configuration file.<br>
 ```bash
   sudo nano /etc/filebeat/filebeat.yml
    ```
-![image](https://github.com/user-attachments/assets/52e850b1-ac15-43b4-b51c-b2ca7828bf2d)
-Filebeat is configured to read logs from system logs `(/var/log/*.log)`.
+![image](https://github.com/user-attachments/assets/52e850b1-ac15-43b4-b51c-b2ca7828bf2d)<br>
+Filebeat is configured to read logs from system logs `(/var/log/*.log)`.<br>
 
-Now we need to edit the file also to send logs directly to Elasticsearch.
-![image](https://github.com/user-attachments/assets/2a3369e1-d3b3-4792-859c-b3e6ccb3385c)
-Next, we need to start the Filebeat service and configure it to launch automatically at system startup.
+Now we need to edit the file also to send logs directly to Elasticsearch.<br>
+![image](https://github.com/user-attachments/assets/2a3369e1-d3b3-4792-859c-b3e6ccb3385c)<br>
+Next, we need to start the Filebeat service and configure it to launch automatically at system startup.<br>
 ```bash
   sudo systemctl start filebeat
   sudo systemctl enable filebeat
   sudo systemctl status filebeat
    ```
-![image](https://github.com/user-attachments/assets/d2ee2329-9522-4518-9871-6078cc7fb2b3)
-Let's check the Filebeat configuration for any errors.
+![image](https://github.com/user-attachments/assets/d2ee2329-9522-4518-9871-6078cc7fb2b3)<br>
+Let's check the Filebeat configuration for any errors.<br>
 ```bash
   sudo filebeat test config
    ```
-Let's also test the connection to Elasticsearch by running:
+Let's also test the connection to Elasticsearch by running:<br>
 ```bash
   sudo filebeat test output
    ```
-![image](https://github.com/user-attachments/assets/9c35c279-9c0d-41f7-bab4-d830476d70e3)
-Let's verify whether the logs are being displayed in ELK.
-![image](https://github.com/user-attachments/assets/822fd89b-0432-4eac-aa90-065115626a73)
+![image](https://github.com/user-attachments/assets/9c35c279-9c0d-41f7-bab4-d830476d70e3)<br>
+Let's verify whether the logs are being displayed in ELK.<br>
+![image](https://github.com/user-attachments/assets/822fd89b-0432-4eac-aa90-065115626a73)<br>
+![image](https://github.com/user-attachments/assets/812201e8-ab08-4ce8-b50e-b9888a8e63dc)<br>
+
+
+---
+## Send Logs from Winlogbeat through Logstash to ELK
+I have successfully installed Elasticsearch and Kibana on an Ubuntu machine. Now, I would like to install Logstash on a separate Ubuntu machine.<br>
+```bash
+  sudo apt update && sudo apt install logstash -y
+   ```
+Logstash needs a configuration file to tell it where to receive logs from and where to send them. So let's make a new one for Winlogbeat.<br>
+```bash
+  sudo nano /etc/logstash/conf.d/winlogbeat.conf
+   ```
+![image](https://github.com/user-attachments/assets/ae06f38b-c8fb-43ea-ba27-a4689eb74b71)<br>
+Replace the IP address, username, and password with your own credentials.<br>
+
+Before starting Logstash, let's check if the configuration is correct:<br>
+```bash
+  sudo /usr/share/logstash/bin/logstash --path.settings /etc/logstash -t
+   ```
+![image](https://github.com/user-attachments/assets/aec7cedf-195a-4a6c-9792-b15499a466b5)<br>
+`"Configuration OK"`, the config is good!<br>
+This command will parse the configuration files (including any files in `/etc/logstash/conf.d/`) and report any errors or warnings.<br>
+
+- `-t` → It parses and validates all the configuration files (found in the directory specified by `--path.settings`, such as `/etc/logstash`) to check for syntax errors or misconfigurations, then exits once testing is complete. This is useful because it allows us to ensure the configuration is correct before we start processing events.<br>
+Now let's start and enable Logstash.<br>
+```bash
+  sudo systemctl start logstash.service
+  sudo systemctl enable logstash.service
+  sudo systemctl status logstash.service
+   ```
+![image](https://github.com/user-attachments/assets/50a634bf-0fa3-4537-b254-9e432e1df1d9)<br>
+Next, we need to configure Logstash to listen for incoming data from Winlogbeat on port 5044.<br>
+```bash
+  /usr/share/logstash/bin/logstash -f /etc/logstash/conf.d/winlogbeat.conf
+   ```
+![image](https://github.com/user-attachments/assets/a2529b81-df49-4e9b-9707-b8a9b6659350)<br>
+When you run this command:<br>
+1- Logstash will start and load the configuration from `/etc/logstash/conf.d/winlogbeat.conf`.<br>
+2- It will begin listening for incoming data (from Winlogbeat on port `5044`).<br>
+3- It will process the data according to the configuration and send it to the specified output ( Elasticsearch).<br>
+Let's verify if there are any issues.<br>
+```bash
+  sudo journalctl -u logstash --no-pager --lines=50
+   ```
+![image](https://github.com/user-attachments/assets/98a0e041-bb41-49bc-acb9-cda637ee823e)<br>
+This command displays the most recent 50 log lines from the Logstash service. <br>
+Now we need to configure Winlogbeat to Send Logs to Logstash.<br>
+```bash
+  .\notepad.exe 'C:\Program Files\Winlogbeat\winlogbeat.yml'
+   ```
+![image](https://github.com/user-attachments/assets/31e18c18-bff9-465e-a3cc-e17d99816e06)<br>
+We need to replace with our Logstash machine's IP.<br>
+Next let's test the configuration:<br>
+```bash
+  .\winlogbeat.exe test config -c .\winlogbeat.yml
+   ```
+![image](https://github.com/user-attachments/assets/ecf57c87-65bc-4018-bfa1-2b098b70f6a4)<br>
+Next, let's start the service:<br>
+```bash
+  Start-Service winlogbeat
+  Get-service winlogbeat
+   ```
+![image](https://github.com/user-attachments/assets/9ad88547-b404-44ca-966e-e85c280d4151)<br>
+Before sending logs, let's check the connection to the configured output (Logstash) is established.<br>
+```bash
+.\winlogbeat.exe test output
+   ```
+![image](https://github.com/user-attachments/assets/e31f3c59-fc1f-45da-a028-7074154da82d)<br>
+This command verifies if Winlogbeat can successfully send logs to the configured destination.<br>
+Next, we need to run Winlogbeat using the winlogbeat.yml configuration file and shows real-time logs in the console.<br>
+```bash
+.\winlogbeat.exe -c .\winlogbeat.yml -e 
+   ```
+![image](https://github.com/user-attachments/assets/7ae0fcec-1fd7-4af4-88fd-3470c2f0c550)<br>
+- `.\winlogbeat.exe` → Runs the Winlogbeat program to collect windows logs.<br>
+- `-c .\winlogbeat.yml` → Uses the winlogbeat.yml file for configuration (tells Winlogbeat where to send logs, like Logstash).<br>
+- `-e` → Shows log messages on the screen instead of saving them to a file.<br>
+We now need to confirm whether ELK successfully receives logs from Logstash.<br>
+From Stack Management  → Index Management<br>
+![image](https://github.com/user-attachments/assets/1188f177-0a95-467e-9a2f-e226cfa58c40)<br>
+Let's create an index and review the logs on the Discover page.<br>
+![image](https://github.com/user-attachments/assets/2a6ec345-a2a6-448d-9134-0f4699f30d0c)<br>
+```bash
+HOSTNAME.EXE
+   ```
+![image](https://github.com/user-attachments/assets/abacc0da-2515-4f15-b948-9171567a8b03)<br>
+![image](https://github.com/user-attachments/assets/6d1a8506-1cbc-42ed-abc6-e1269022f85d)<br>
+
+
+
