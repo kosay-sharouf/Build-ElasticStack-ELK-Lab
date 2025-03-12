@@ -1,4 +1,4 @@
-👨‍💻 # Build-ElasticStack-ELK-Lab 🚀
+![image](https://github.com/user-attachments/assets/a9c147ee-e931-4132-9eed-37c55c4251ac)👨‍💻 # Build-ElasticStack-ELK-Lab 🚀
 --- 
 ## Objective 🎯
 
@@ -561,3 +561,142 @@ Let's create a dashboard that visualizes data of the Client01 machine.<br>
 
 
 --- 
+
+## Elasticsearch API and Ingestion Pipeline
+### Elasticsearch API
+`Task`: Create a new index containing three documents. After creation, delete one document using the DELETE method and another using a query-based deletion. Then, reindex the remaining documents and perform an index flush.<br>
+First, let's open Kibana Dev Tools and initiate the creation of a new index.<br>
+![image](https://github.com/user-attachments/assets/82d5906d-6363-4f36-9ebf-5c4fdbfaa648)<br>
+```bash
+   PUT /weinnovate 
+   ```
+![image](https://github.com/user-attachments/assets/4750e37d-af7a-4f74-a545-5e6b0d082458)<br>
+Now, let's add three documents to this index:<br>
+```bash
+   POST /weinnovate/_doc/one
+{
+  "name": "Fares",
+  "city": "Al Mahalla",
+  "age": "23"
+}
+
+POST /weinnovate/_doc/two
+{
+  "name": "Omar",
+  "city": "Cairo",
+  "age": "23"
+}
+
+POST /weinnovate/_doc/three
+{
+  "name": "Ahmed",
+  "city": "Mansoura",
+  "age": "25"
+}
+   ```
+![image](https://github.com/user-attachments/assets/b716f1a6-dac9-4821-9797-55a00b2b7ab1)<br>
+Now, let's proceed with deleting the first document.<br>
+```bash
+  DELETE /weinnovate/_doc/one
+  GET /weinnovate/_search
+   ```
+![image](https://github.com/user-attachments/assets/2acf5040-bf27-4feb-9ad3-be0c49e1e990)<br>
+Next, let's try delete one document by query.<br>
+```bash
+  POST /weinnovate/_delete_by_query
+{
+  "query":{
+    "match":{
+      "name": "Omar"
+    }
+  }
+}
+
+GET /weinnovate/_search
+   ```
+![image](https://github.com/user-attachments/assets/f84260ad-4592-4ffb-87e5-4419be319bc9)<br>
+![image](https://github.com/user-attachments/assets/113a38d0-fc00-4fac-9464-5e0881b84ebb)<br>
+We now need to reindex the documents, which enables us to copy them from one index to another. Before reindexing, we need to create a new index.<br>
+```bash
+  PUT weinnovate_new
+   ```
+![image](https://github.com/user-attachments/assets/f84e9acc-3589-4bd6-b829-e4cd4694e615)<br>
+Now, let's reindex the data from `weinnovate` to `weinnovate_new`.<br>
+```bash
+  POST _reindex
+{
+  "source": {
+    "index": "weinnovate"
+  },
+  "dest": {
+    "index": "weinnovate_new"
+  }
+}
+   ```
+![image](https://github.com/user-attachments/assets/b8b54d0e-55ff-4dea-bdec-405ae713fa42)<br>
+```bash
+  GET /weinnovate_new/_search
+   ```
+![image](https://github.com/user-attachments/assets/80d63fcb-b207-4cb3-ad6c-fb81e6d1f9c6)<br>
+Flushing an index in Elasticsearch ensures that all operations are written to disk. This can help free up memory and optimize performance.<br>
+```bash
+  POST weinnovate_new/_flush
+   ```
+![image](https://github.com/user-attachments/assets/ce67d622-e8bf-4775-b6b8-b2c30f66e184)<br>
+### Ingestion Pipline
+Ingest pipelines let you perform common transformations on your data before indexing. For example, you can use pipelines to remove fields, extract values from text, and enrich your data.<br>
+`Task: Create a pipeline with three distinct processors for a new index.`<br>
+First, we will create a pipeline named weinnovate_pipeline, which will include three processors.<br>
+```bash
+  PUT _ingest/pipeline/weinnovate_pipline
+{
+  "description": "New Pipline for the weinnovate index",
+  "processors": [
+    {"append":{
+      "field": "Status",
+      "value": ["Active"]
+      }
+    }, 
+    {"convert":{
+      "field": "age",
+      "type": "integer"
+      }
+    }, 
+    {"uppercase":{
+        "field": "name"
+      }
+    }
+  ]
+}
+   ```
+- The `append` processor adds a new value `"Active"` to the `Status field`.<br>
+
+- The `convert` processor converts the value of `"age"` to an `integer`.<br>
+
+- The `uppercase` processor converts the `"name"` field to `uppercase`.<br>
+![image](https://github.com/user-attachments/assets/d3ee21ac-f8bf-4208-95f3-7390ac6f87c7)<br>
+We need to confirm that the pipeline was created successfully.<br>
+```bash
+  GET _ingest/pipeline/weinnovate_pipeline
+   ```
+![image](https://github.com/user-attachments/assets/929fe9dd-4c9c-477b-bbf5-e0d903a5a14b)<br>
+Now, I want to apply this pipeline to the previously created `"weinnovate"` index. To do this, we first need to reindex the existing data while applying the pipeline during the reindexing process.<br>
+```bash
+  POST _reindex
+{
+  "source": {
+    "index": "weinnovate"
+  },
+  "dest": {
+    "index": "weinnovate_two",  
+    "pipeline": "weinnovate_pipline"
+  }
+}
+   ```
+![image](https://github.com/user-attachments/assets/d47f1c1f-5e55-4931-9604-cf32b084731b)<br>
+Let's verify this by retrieving the documents from the `weinnovate_two` index.<br>
+```bash
+  GET _ingest/pipeline/weinnovate_pipeline
+   ```
+![image](https://github.com/user-attachments/assets/b5f4bccb-0e18-4636-a78f-4a33d03b59f5)<br>
+Alternatively, we can first create the pipeline and then apply it when creating a new index.<br>
