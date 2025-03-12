@@ -1,4 +1,4 @@
-👨‍💻 # Build-ElasticStack-ELK-Lab 🚀
+![image](https://github.com/user-attachments/assets/8e2aadb5-cb3c-4124-9579-654c9bdb3291)👨‍💻 # Build-ElasticStack-ELK-Lab 🚀
 --- 
 ## Objective 🎯
 
@@ -346,4 +346,50 @@ then we can run `HOSTNAME.EXE`<br>
 
 ---
 ### Filebeat
+![7](https://github.com/user-attachments/assets/e8e61549-09c2-4755-8d6a-8747d68fdb9a)
+Filebeat, as the name implies, `hips log files`. In an ELK-based logging pipeline, Filebeat plays the role of the logging agent—installed on the machine generating the log files, tailing them, and forwarding the data to either Logstash for more advanced processing or directly into Elasticsearch for indexing.<br>
+Now , we need to install Filebeat useed commandline and Let's start by adding Elastic’s GPG key to verify the packages:<br>
+```bash
+  wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --dearmor -o /usr/share/keyrings/elastic-keyring.gpg
+   ```
+![image](https://github.com/user-attachments/assets/0fac454f-0083-4f80-bd76-8222a1316edd)<br>
+Next, we need to add the Elastic repository to our system:<br>
+```bash
+  echo "deb [signed-by=/usr/share/keyrings/elastic-keyring.gpg] 
+https://artifacts.elastic.co/packages/8.x/apt stable main" | sudo tee 
+/etc/apt/sources.list.d/elastic-8.x.list
+   ```
+![image](https://github.com/user-attachments/assets/99a91634-3cef-43d6-99f6-4eb53784614a)
+Next, let's update the package list and install Filebeat.
 
+```bash
+  sudo apt update && sudo apt install filebeat
+   ```
+![image](https://github.com/user-attachments/assets/3346bd13-ce53-4cb0-902c-6a685e145080)
+The next step is to open the Filebeat configuration file.
+```bash
+  sudo nano /etc/filebeat/filebeat.yml
+   ```
+![image](https://github.com/user-attachments/assets/52e850b1-ac15-43b4-b51c-b2ca7828bf2d)
+Filebeat is configured to read logs from system logs `(/var/log/*.log)`.
+
+Now we need to edit the file also to send logs directly to Elasticsearch.
+![image](https://github.com/user-attachments/assets/2a3369e1-d3b3-4792-859c-b3e6ccb3385c)
+Next, we need to start the Filebeat service and configure it to launch automatically at system startup.
+```bash
+  sudo systemctl start filebeat
+  sudo systemctl enable filebeat
+  sudo systemctl status filebeat
+   ```
+![image](https://github.com/user-attachments/assets/d2ee2329-9522-4518-9871-6078cc7fb2b3)
+Let's check the Filebeat configuration for any errors.
+```bash
+  sudo filebeat test config
+   ```
+Let's also test the connection to Elasticsearch by running:
+```bash
+  sudo filebeat test output
+   ```
+![image](https://github.com/user-attachments/assets/9c35c279-9c0d-41f7-bab4-d830476d70e3)
+Let's verify whether the logs are being displayed in ELK.
+![image](https://github.com/user-attachments/assets/822fd89b-0432-4eac-aa90-065115626a73)
