@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/8e2aadb5-cb3c-4124-9579-654c9bdb3291)👨‍💻 # Build-ElasticStack-ELK-Lab 🚀
+👨‍💻 # Build-ElasticStack-ELK-Lab 🚀
 --- 
 ## Objective 🎯
 
@@ -483,4 +483,81 @@ HOSTNAME.EXE
 ![image](https://github.com/user-attachments/assets/6d1a8506-1cbc-42ed-abc6-e1269022f85d)<br>
 
 
+--- 
 
+## Enable Windows Audit Policy & Winlogbeat
+### Prerequisites 🔧
+We have successfully set up Elasticsearch and Kibana on the Ubuntu machine. The next step is to install Winlogbeat and configure it to send logs to the ELK stack. However, before proceeding with the installation, we need to apply specific policies to the Sales OU that was previously created.<br>
+#### `Process Creation Logging`:
+```bash
+Computer Configuration > Policies > Windows Settings > Security Settings > Advanced Audit Policy Configuration > 
+System Audit Policies - Local Group Policy Object > Detailed Tracking
+   ```
+![image](https://github.com/user-attachments/assets/2b8d376d-d807-48b9-b3bd-66c558fc7572)<br>
+Let's call it Audit Logging.<br>
+![image](https://github.com/user-attachments/assets/250418b3-569b-4cef-a020-e55be462e861)<br><br>
+![image](https://github.com/user-attachments/assets/ee413402-671a-4620-909c-a3db428da877)<br>
+![image](https://github.com/user-attachments/assets/9e962349-dd35-4c3c-9f85-cb2274f5508f)<br>
+![image](https://github.com/user-attachments/assets/3d8a8f29-55d7-449e-bfc3-a414ed601519)<br>
+#### `Logon and Authentication Auditing:`<br>
+```bash
+Computer Configuration > Policies > Windows Settings > Security Settings > Advanced Audit Policy Configuration > 
+System Audit Policies - Local Group Policy Object > Logon/Logoff
+   ```
+![image](https://github.com/user-attachments/assets/d88ca56c-9099-4b62-a360-92b96d710d57)<br>
+![image](https://github.com/user-attachments/assets/a5af2841-41de-44ed-b977-02ce9361b183)<br><br>
+![image](https://github.com/user-attachments/assets/4537f7dd-2fcc-4c70-a586-cf3eb491ca14)<br>
+![image](https://github.com/user-attachments/assets/7e7d83be-3534-4856-ab8b-7fa4fcf82062)<br>
+![image](https://github.com/user-attachments/assets/83a4f9c2-703f-49cf-8922-76d4babf2c60)<br>
+Next, we need to run the following command on the client machine to apply the policy:<br>
+```bash
+   gpupdate /force
+   ```
+![image](https://github.com/user-attachments/assets/87ef0f12-9f9a-40ab-956d-460d379c102d)<br>
+Next, we need to configure Winlogbeat on the Windows Client.<br>
+![image](https://github.com/user-attachments/assets/c4209804-8638-4550-afe6-37e0810105ad)<br>
+Next, let's start the service:<br>
+```bash
+   Start-Service winlogbeat
+   Get-service winlogbeat
+   ```
+![image](https://github.com/user-attachments/assets/68ac3a6d-180c-4198-ac40-d7f1f48f8786)<br>
+Next, we will proceed with testing the configuration.<br>
+```bash
+   .\winlogbeat.exe test config -c .\winlogbeat.yml
+   ```
+![image](https://github.com/user-attachments/assets/3346fabb-7ab6-42c4-82af-d756acf91c22)<br>
+Before sending logs, let's check the connection to the configured output (Elasticsearch) is established.<br>
+```bash
+   .\winlogbeat.exe test output
+   ```
+![image](https://github.com/user-attachments/assets/479d7966-b6cb-4558-819d-f5169c6fa19d)<br>
+This command verifies if Winlogbeat can successfully send logs to the configured destination.<br>
+Next, we need to start Winlogbeat using the `winlogbeat.yml` configuration file to capture and display real-time logs in the console.<br>
+```bash
+   .\winlogbeat.exe -c .\winlogbeat.yml -e
+   ```
+![image](https://github.com/user-attachments/assets/c5b06993-269a-4479-8506-327fed7ee5df)<br>
+- `.\winlogbeat.exe` → Runs the Winlogbeat program to collect windows logs.<br>
+
+- `-c .\winlogbeat.yml` → Uses the winlogbeat.yml file for configuration (tells Winlogbeat where to send logs, like Elasticsearch).<br>
+
+- `-e` → Shows log messages on the screen instead of saving them to a file.<br>
+We now need to confirm whether ELK successfully receives logs from Winlogbeat.<br>
+
+From Stack Management  → Index Management <br>
+
+![image](https://github.com/user-attachments/assets/66c9bd0b-05a6-4f26-9250-ea9883b11cb4)<br>
+![image](https://github.com/user-attachments/assets/64c85c4e-f749-4d06-853b-ec815e9c150a)<br>
+Let's apply filters based on specific Event IDs.<br>
+![image](https://github.com/user-attachments/assets/e4e2a17f-b1af-42c6-988b-92857893286f)<br>
+`4688`:A new process has been created.<br>
+![image](https://github.com/user-attachments/assets/6cd0ddab-b118-40aa-89a1-cc09d6693e33)<br>
+`4624`: An account was successfully logged on.<br>
+![image](https://github.com/user-attachments/assets/43adc2a6-ffbf-4b21-b2d0-f9c27657cff8)<br>
+`4672`: Special privileges assigned to new logon.<br>
+Let's create a dashboard that visualizes data of the Client01 machine.<br>
+![image](https://github.com/user-attachments/assets/f39e1b5e-ca26-4c1d-8c81-378921c0fa50)<br>
+
+
+--- 
