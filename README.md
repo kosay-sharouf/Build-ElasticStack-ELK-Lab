@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/a9c147ee-e931-4132-9eed-37c55c4251ac)👨‍💻 # Build-ElasticStack-ELK-Lab 🚀
+👨‍💻 # Build-ElasticStack-ELK-Lab 🚀
 --- 
 ## Objective 🎯
 
@@ -12,14 +12,17 @@ The Build-ElasticStack-ELK-Lab project aimed to create a controlled environment 
 - Ability to generate and recognize attack signatures and patterns.
 - Enhanced knowledge of network protocols and security vulnerabilities.
 - Development of critical thinking and problem-solving skills in cybersecurity.
+- Creat Elasticsearch API and Ingestion Pipeline
+- set up Elasticsearch and Kibana on the Ubuntu machine
+- install Winlogbeat and configure it to send logs to the ELK stack
 ---
  ## Tools Used 🔧
 
-- Security Information and Event Management (SIEM) system for log ingestion and analysis.
-- Telemetry generation tools to create realistic network traffic and attack scenarios.
-```bash
-  
-   ```
+- Security Information and Event Management (SIEM) system for log analysis.
+- Elasticsearch and Kibana setup in ubuntu
+- Fluent-Bit to send logs to ELK
+- Enable Windows Audit Policy
+
 Steps
 ---
 ## setup Kibana in ubuntu and Configure Elasticsearch
